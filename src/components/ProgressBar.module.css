@@ -1,0 +1,12 @@
+.track {
+  height: 3px;
+  background: var(--surface3);
+  border-radius: 2px;
+  overflow: hidden;
+  margin: 10px 0;
+}
+.bar {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.45s ease;
+}

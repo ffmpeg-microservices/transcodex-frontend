@@ -1,0 +1,17 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main {
+  flex: 1;
+  max-width: 1120px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 44px 24px 80px;
+}
+
+@media (max-width: 700px) {
+  .main { padding: 28px 16px 60px; }
+}

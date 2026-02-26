@@ -1,0 +1,176 @@
+.navbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 32px;
+  height: 60px;
+  background: rgba(8, 8, 12, 0.96);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(16px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  flex-shrink: 0;
+  margin-right: 8px;
+}
+.brandIcon { font-size: 20px; }
+.brandName {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: -0.5px;
+  color: var(--text);
+}
+
+.links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+}
+
+.link {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+  text-decoration: none;
+  position: relative;
+}
+.link:hover { color: var(--text); background: var(--surface3); }
+.linkActive { color: var(--accent) !important; background: var(--accent-glow) !important; }
+
+.queueLink { position: relative; }
+.badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 1px 5px;
+  min-width: 16px;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.userMenu {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  position: relative;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.userMenu:hover { background: var(--surface3); }
+
+.avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  font-family: var(--font-display);
+  flex-shrink: 0;
+}
+.username { font-size: 13px; color: var(--text); }
+.chevron { font-size: 10px; color: var(--text-muted); }
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px;
+  min-width: 210px;
+  z-index: 200;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  animation: fadeDown 0.15s ease;
+}
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.dropdownInfo {
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.dropdownInfo strong { font-size: 14px; font-family: var(--font-display); color: var(--text); }
+.dropdownInfo span { font-size: 12px; color: var(--text-muted); }
+.dropdownDivider { border: none; border-top: 1px solid var(--border); margin: 6px 0; }
+.dropdownItem {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.dropdownItem:hover { background: var(--surface3); }
+.logoutItem { color: var(--red); }
+
+.authButtons { display: flex; gap: 8px; margin-left: auto; }
+.btnGhost {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 18px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btnGhost:hover { color: var(--text); border-color: var(--border-light); }
+.btnPrimary {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 7px 18px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btnPrimary:hover { background: var(--accent-hover); }
+
+@media (max-width: 700px) {
+  .navbar { padding: 0 16px; }
+  .links { display: none; }
+  .username { display: none; }
+}

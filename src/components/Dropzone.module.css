@@ -1,0 +1,157 @@
+.wrapper { display: flex; flex-direction: column; gap: 0; }
+
+.zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 48px 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--surface2);
+  outline: none;
+}
+.zone:focus-visible { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+.zone:hover, .dragging {
+  border-color: var(--accent) !important;
+  background: var(--accent-glow) !important;
+}
+.hasError { border-color: var(--red) !important; }
+
+.hiddenInput { display: none; }
+
+.zoneIcon { font-size: 40px; margin-bottom: 12px; }
+.zoneText { font-size: 15px; color: var(--text); margin-bottom: 6px; }
+.zoneSub { font-size: 13px; color: var(--text-muted); }
+.zoneLink { color: var(--accent); }
+.zoneLimits {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 10px;
+  letter-spacing: 0.5px;
+}
+
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.loadingState p { color: var(--text-muted); font-size: 14px; }
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.errorMsg {
+  margin-top: 10px;
+  color: var(--red);
+  font-size: 13px;
+  padding: 10px 14px;
+  background: var(--red-dim);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.success {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--green-dim);
+  border: 1px solid rgba(16, 201, 143, 0.25);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+}
+.successIcon { font-size: 28px; flex-shrink: 0; }
+.successInfo { flex: 1; min-width: 0; }
+.successInfo strong {
+  display: block;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.successInfo span { font-size: 12px; color: var(--text-muted); }
+
+.clearBtn {
+  background: var(--red-dim);
+  color: var(--red);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.clearBtn:hover { background: rgba(239, 68, 68, 0.22); }
+
+.successMeta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.serverBadge {
+  background: var(--accent-glow);
+  border: 1px solid rgba(91,110,245,0.25);
+  color: var(--accent);
+  font-size: 10px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  letter-spacing: 0.3px;
+}
+.progressTrack {
+  width: 60%;
+  height: 3px;
+  background: var(--surface3);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+.progressFill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.serverPickBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.serverPickBtn:hover:not(:disabled) {
+  background: var(--surface3);
+  border-color: var(--border-light);
+  color: var(--text);
+}
+.serverPickBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+.serverPickIcon { font-size: 16px; }

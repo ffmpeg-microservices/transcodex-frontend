@@ -1,0 +1,169 @@
+.page { padding: 20px 0 60px; }
+
+/* Hero */
+.hero {
+  text-align: center;
+  padding: 90px 0 70px;
+  position: relative;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 900px 420px at 50% 0%, rgba(91, 110, 245, 0.09) 0%, transparent 70%);
+  pointer-events: none;
+}
+.heroBadge {
+  display: inline-block;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 26px;
+  letter-spacing: 0.5px;
+}
+.heroTitle {
+  font-family: var(--font-display);
+  font-size: clamp(48px, 9vw, 88px);
+  font-weight: 800;
+  line-height: 1.03;
+  letter-spacing: -2.5px;
+  color: var(--text);
+  margin-bottom: 22px;
+}
+.heroAccent {
+  background: linear-gradient(135deg, var(--accent) 0%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.heroSub {
+  font-size: 17px;
+  color: var(--text-muted);
+  max-width: 500px;
+  margin: 0 auto 36px;
+  line-height: 1.65;
+}
+.heroActions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+.btnPrimary {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 12px 26px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btnPrimary:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(91,110,245,0.35); }
+.btnGhost {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 26px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btnGhost:hover { color: var(--text); border-color: var(--border-light); background: var(--surface3); }
+
+/* Features */
+.featuresSection { margin-top: 64px; }
+.sectionEyebrow {
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 24px;
+  font-weight: 500;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 30px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+  outline: none;
+}
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.card:hover, .card:focus-visible {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.35);
+}
+.card:hover::before, .card:focus-visible::before { opacity: 1; }
+.cardIcon { font-size: 34px; margin-bottom: 14px; }
+.cardTag {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+.cardTitle {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.cardDesc { font-size: 13px; color: var(--text-muted); line-height: 1.65; margin-bottom: 18px; }
+.cardCta { font-size: 12px; color: var(--accent); font-weight: 500; }
+
+/* Stats */
+.stats {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-top: 64px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 36px;
+  flex-wrap: wrap;
+}
+.statItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 44px;
+  border-right: 1px solid var(--border);
+}
+.statItem:last-child { border-right: none; }
+.statNum {
+  font-family: var(--font-display);
+  font-size: 38px;
+  font-weight: 800;
+  color: var(--accent);
+  line-height: 1;
+}
+.statLabel { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+
+@media (max-width: 700px) {
+  .stats { gap: 24px; padding: 28px 20px; }
+  .statItem { padding: 0 16px; border-right: none; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
+  .statItem:last-child { border-bottom: none; padding-bottom: 0; }
+}

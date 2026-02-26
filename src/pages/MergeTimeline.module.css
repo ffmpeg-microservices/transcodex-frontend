@@ -1,0 +1,170 @@
+.wrapper { display: flex; flex-direction: column; gap: 20px; }
+
+.empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-dim);
+  font-size: 14px;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  background: var(--surface2);
+}
+
+/* ── Timeline bar ────────────────────────────────────── */
+.timelineBar {
+  position: relative;
+  display: flex;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  overflow: visible;
+  gap: 2px;
+  padding-bottom: 22px;
+}
+
+.timelineBlock {
+  flex-shrink: 0;
+  height: 48px;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0.75;
+  transition: opacity 0.15s, transform 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  min-width: 28px;
+}
+.timelineBlock:hover { opacity: 1; transform: scaleY(1.06); }
+.timelineBlockActive { opacity: 1; outline: 2px solid #fff; outline-offset: 1px; }
+
+.timelineLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.9);
+  font-family: var(--font-display);
+}
+
+.ruler {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  pointer-events: none;
+}
+
+/* ── Card list ───────────────────────────────────────── */
+.cardList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-left: 3px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  cursor: grab;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+  user-select: none;
+}
+.card:hover { background: var(--surface3); border-color: var(--border-light); }
+.card:active { cursor: grabbing; }
+.cardActive {
+  background: var(--surface3) !important;
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.cardDragOver {
+  transform: translateY(2px);
+  box-shadow: 0 -3px 0 var(--accent);
+}
+
+.cardThumb {
+  position: relative;
+  flex-shrink: 0;
+  width: 56px;
+  height: 36px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.thumbImg { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumbIcon {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+.cardIndex {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  font-family: var(--font-display);
+  border-radius: 3px;
+  padding: 1px 4px;
+  line-height: 1;
+}
+
+.cardInfo { flex: 1; min-width: 0; }
+.cardName {
+  display: block;
+  font-size: 13px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 3px;
+}
+.cardMeta {
+  display: flex;
+  gap: 10px;
+}
+.cardMeta span { font-size: 11px; color: var(--text-muted); }
+
+.cardActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.dragHandle {
+  font-size: 18px;
+  color: var(--text-dim);
+  cursor: grab;
+  line-height: 1;
+  transition: color 0.15s;
+}
+.dragHandle:hover { color: var(--text-muted); }
+.removeBtn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s;
+  font-family: var(--font-mono);
+}
+.removeBtn:hover { background: var(--red-dim); color: var(--red); }
+
+.hint {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-align: center;
+  letter-spacing: 0.3px;
+}
