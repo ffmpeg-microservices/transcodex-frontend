@@ -1,10 +1,11 @@
 export interface MediaItem {
   id: string
-  file: File
+  file?: File
   fileName: string
   fileSize: number
-  duration: number      // seconds
+  duration: number        // seconds
   isVideo: boolean
-  url: string           // object URL
-  thumbnailUrl?: string // for video thumbnail
+  storageId?: string      // set after upload or when picked from server
+  url?: string            // local object URL — only for locally uploaded files
+  thumbnailUrl?: string   // video thumbnail — only for locally uploaded files
 }

@@ -3,9 +3,11 @@ import { useProcess } from '../context/ProcessContext'
 import { ProgressBar } from '../components/ProgressBar'
 import { ProcessStatus } from '../types'
 import styles from './QueuePage.module.css'
+import { useEffect, useState } from 'react'
+import { getAllProcesses } from '../apis/process.api'
 
 const STATUS_LABEL: Record<ProcessStatus, string> = {
-  [ProcessStatus.PENDING]: 'Queued',
+  [ProcessStatus.WAITING]: 'Queued',
   [ProcessStatus.PROCESSING]: 'Processing',
   [ProcessStatus.COMPLETED]: 'Completed',
   [ProcessStatus.FAILED]: 'Failed',
@@ -13,7 +15,7 @@ const STATUS_LABEL: Record<ProcessStatus, string> = {
 }
 
 const STATUS_CLASS: Record<ProcessStatus, string> = {
-  [ProcessStatus.PENDING]: styles.statusPending,
+  [ProcessStatus.WAITING]: styles.statusPending,
   [ProcessStatus.PROCESSING]: styles.statusProcessing,
   [ProcessStatus.COMPLETED]: styles.statusCompleted,
   [ProcessStatus.FAILED]: styles.statusFailed,
@@ -34,12 +36,29 @@ function formatDate(iso: string) {
 }
 
 export default function QueuePage() {
-  const { processes, cancelProcess } = useProcess()
+  console.log("QueuePage Rendered");
+
+  const { processes, killProcess, addProcess } = useProcess()
   const navigate = useNavigate()
+
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      const data = await getAllProcesses();
+      const newData = data.filter((p) => !processes.some((existing) => existing.processId === p.processId));
+      console.log("processes=", processes, "data=", data, "newData=", newData);
+
+      newData.forEach(addProcess);
+      setLoading(false);
+    }
+    void load();
+  }, []);
 
   const activeCount = processes.filter(
     (p) =>
-      p.status === ProcessStatus.PENDING ||
+      p.status === ProcessStatus.WAITING ||
       p.status === ProcessStatus.PROCESSING,
   ).length
 
@@ -87,14 +106,12 @@ export default function QueuePage() {
       </div>
 
       <div className={styles.list}>
-        {processes.map((item) => {
-          const proc = item.processResponseDto
-          console.log('Rendering process:', proc);
+        {processes.map((proc) => {
 
-          const isActive =
-            proc.status === ProcessStatus.PENDING ||
-            proc.status === ProcessStatus.PROCESSING
+          const isActive = proc.status === ProcessStatus.WAITING || proc.status === ProcessStatus.PROCESSING
           const isDone = proc.status === ProcessStatus.COMPLETED
+          const isFailed = proc.status === ProcessStatus.FAILED
+          const isWaiting = proc.status === ProcessStatus.WAITING
 
           return (
             <div key={proc.processId} className={styles.card}>
@@ -122,13 +139,49 @@ export default function QueuePage() {
                 </span>
               </div>
 
-              {isActive && <ProgressBar status={proc.status} />}
+              {/* Real progress bar */}
+
+              {isActive && (
+
+                <div className={styles.progressWrap}>
+
+                  <div className={styles.progressTrack}>
+
+                    <div
+
+                      className={`${styles.progressFill} ${isWaiting ? styles.progressPulse : ''}`}
+
+                      style={{ width: `${proc.progress}%` }}
+
+                    />
+
+                  </div>
+
+                  <span className={styles.progressLabel}>{proc.progress}%</span>
+
+                </div>
+
+              )}
+
+
+
+              {/* Failed reason */}
+
+              {isFailed && (
+
+                <p className={styles.failedNote}>
+
+                  ⚠ This job failed. Check your file and try again.
+
+                </p>
+
+              )}
 
               <div className={styles.cardActions}>
                 {isActive && (
                   <button
                     className={styles.btnDanger}
-                    onClick={() => cancelProcess(proc.processId)}
+                    onClick={() => killProcess(proc.processId)}
                   >
                     ✕ Cancel
                   </button>
@@ -167,6 +220,14 @@ export default function QueuePage() {
             </div>
           )
         })}
+        {
+          loading && (
+            <div className={styles.loadingOverlay}>
+              <div className={styles.spinner} />
+              <span>Loading...</span>
+            </div>
+          )
+        }
       </div>
     </div>
   )

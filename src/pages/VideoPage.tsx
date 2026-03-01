@@ -17,6 +17,7 @@ import {
   type StoredFile,
 } from '../types'
 import styles from './ToolPage.module.css'
+import { ProcessingBanner } from '../components/ProcessingBanner'
 
 const VIDEO_FORMATS = [MediaType.mp4, MediaType.avi, MediaType.mkv, MediaType.mov, MediaType.wmv, MediaType.flv, MediaType.webm, MediaType.mpeg, MediaType.m4v]
 const FRAME_RATES = [24, 25, 30, 48, 60]
@@ -35,12 +36,17 @@ export default function VideoPage() {
   const [crf, setCrf] = useState(23)
   const [frameRate, setFrameRate] = useState(30)
   const [resolution, setResolution] = useState<ResolutionType>(ResolutionType.source)
-  const [submitted, setSubmitted] = useState(false)
+  const [activeProcessId, setActiveProcessId] = useState<string | null>(null)
 
   function handleStoredPick(file: StoredFile) {
     setFromStored(file)
   }
+  function handleStartAnother() {
 
+    clearFile()
+
+    setActiveProcessId(null)
+  }
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     if (!uploadedFile) return
@@ -58,27 +64,13 @@ export default function VideoPage() {
     }
     try {
       const newProcess = await toVideo(data)
-      addProcess(newProcess)
-      setSubmitted(true)
+      addProcess(newProcess.processResponseDto)
+      setActiveProcessId(newProcess.processResponseDto.processId)
+
+      toast.success('Conversion started! You can keep working.')
     } catch (err) {
       toast.error((err as ApiError).message)
     }
-  }
-
-  if (submitted) {
-    return (
-      <div className={styles.page}>
-        <div className={styles.successCard}>
-          <div className={styles.successEmoji}>🚀</div>
-          <h2>Conversion Started!</h2>
-          <p>Your video conversion has been queued and is processing now.</p>
-          <div className={styles.successActions}>
-            <button className={styles.btnPrimary} onClick={() => navigate('/queue')}>View Progress</button>
-            <button className={styles.btnGhost} onClick={() => { clearFile(); setSubmitted(false) }}>Convert Another</button>
-          </div>
-        </div>
-      </div>
-    )
   }
 
   const crfLabel = crf <= 18 ? 'High Quality' : crf <= 28 ? 'Balanced' : 'Smaller Size'
@@ -101,6 +93,21 @@ export default function VideoPage() {
       </div>
 
       <div className={styles.layout}>
+        {/* Live progress banner — shown while job is running, stays above form */}
+
+        {activeProcessId && (
+
+          <ProcessingBanner
+
+            processId={activeProcessId}
+
+            onStartAnother={handleStartAnother}
+
+            anotherLabel="Convert Another"
+
+          />
+
+        )}
         <section className={styles.section}>
           <h2 className={styles.sectionLabel}>1. Upload Video File</h2>
           <Dropzone

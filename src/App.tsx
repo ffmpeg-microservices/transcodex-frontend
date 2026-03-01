@@ -13,6 +13,7 @@ import MergePage from './pages/MergePage'
 import QueuePage from './pages/QueuePage'
 import { ToastProvider } from './components/Toast'
 import styles from './App.module.css'
+import { WebSocketProvider } from './context/WebSocketContext'
 
 function Layout() {
   return (
@@ -74,11 +75,13 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <ProcessProvider>
-          <ToastProvider>
-            <Layout />
-          </ToastProvider>
-        </ProcessProvider>
+        <WebSocketProvider>
+          <ProcessProvider>
+            <ToastProvider>
+              <Layout />
+            </ToastProvider>
+          </ProcessProvider>
+        </WebSocketProvider>
       </AuthProvider>
     </BrowserRouter>
   )

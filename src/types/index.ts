@@ -63,7 +63,7 @@ export enum VideoCodecType {
 }
 
 export enum ProcessStatus {
-  PENDING = 'PENDING',
+  WAITING = 'WAITING',
   PROCESSING = 'PROCESSING',
   COMPLETED = 'COMPLETED',
   FAILED = 'FAILED',
@@ -106,6 +106,35 @@ export interface GifConvertRequest {
   resolution: ResolutionType;
 }
 
+// public record OrderedMedia(
+//   String storageId,
+//   String type // "video" or "audio"
+// ) {
+// }
+
+export interface OrderedMedia {
+  storageId: string;
+  type: 'video' | 'audio';
+}
+
+export interface MergeRequest {
+
+  // List<OrderedMedia> mediaFiles,
+  //       String duration,
+  // String toMediaType,
+  //   String videoCodec,
+  //     String audioCodec,
+  //       int resolutionHeight
+
+
+  mediaFiles: OrderedMedia[];
+  duration: string;
+  toMediaType: 'video';
+  videoCodec?: VideoCodecType;
+  audioCodec?: AudioCodecType;
+  resolutionHeight: number;
+}
+
 // ─── Response DTOs ──────────────────────────────────────────────────────────
 
 export interface ProcessDto {
@@ -121,7 +150,7 @@ export interface ProcessDto {
 
 export interface ProcessResponse {
   message: string;
-  process: ProcessDto;
+  processResponseDto: ProcessDto;
   queue: number;
 }
 

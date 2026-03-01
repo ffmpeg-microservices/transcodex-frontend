@@ -1,6 +1,8 @@
 import { useState, useCallback, useRef } from 'react'
 import type { MediaItem } from './MergePage.types'
 import type { StoredFile } from '../types'
+import { uploadMultiple } from '../apis/storage.api'
+import { ApiError } from '../types'
 
 const MAX_FILES = 10
 const MAX_SIZE_MB = 20
@@ -43,7 +45,6 @@ function getVideoThumbnail(file: File): Promise<string | undefined> {
   })
 }
 
-// Parse "m:ss" or "mm:ss" duration string to seconds
 function parseDuration(dur: string): number {
   const parts = dur.split(':').map(Number)
   if (parts.length === 2) return (parts[0] ?? 0) * 60 + (parts[1] ?? 0)
@@ -51,9 +52,28 @@ function parseDuration(dur: string): number {
   return 0
 }
 
+// ─── Upload state ─────────────────────────────────────────────
+
+export interface UploadState {
+  isUploading: boolean
+  progress: number          // 0–100
+  fileCount: number         // how many files are being uploaded
+  error: string | null
+}
+
+const IDLE_UPLOAD: UploadState = {
+  isUploading: false,
+  progress: 0,
+  fileCount: 0,
+  error: null,
+}
+
+// ─── Hook ─────────────────────────────────────────────────────
+
 export interface UseMergeFilesReturn {
   items: MediaItem[]
-  errors: string[]
+  validationErrors: string[]
+  uploadState: UploadState
   addFiles: (files: FileList | File[]) => Promise<void>
   addFromStored: (storedFiles: StoredFile[]) => void
   removeItem: (id: string) => void
@@ -67,27 +87,40 @@ export interface UseMergeFilesReturn {
 
 export function useMergeFiles(): UseMergeFilesReturn {
   const [items, setItems] = useState<MediaItem[]>([])
-  const [errors, setErrors] = useState<string[]>([])
+  const [validationErrors, setValidationErrors] = useState<string[]>([])
+  const [uploadState, setUploadState] = useState<UploadState>(IDLE_UPLOAD)
   const processingRef = useRef(false)
 
   const addFiles = useCallback(async (files: FileList | File[]) => {
     if (processingRef.current) return
     processingRef.current = true
+
     const fileArray = Array.from(files)
     const newErrors: string[] = []
 
+    // ── Step 1: client-side validation ──────────────────────
     const currentCount = items.length
     const allowedCount = MAX_FILES - currentCount
 
     if (allowedCount <= 0) {
-      setErrors([`Maximum ${MAX_FILES} files allowed.`])
+      setValidationErrors([`Maximum ${MAX_FILES} files allowed.`])
       processingRef.current = false
       return
     }
 
     const toProcess = fileArray.slice(0, allowedCount)
-    const skipped = fileArray.length - toProcess.length
-    const newItems: MediaItem[] = []
+    if (fileArray.length > allowedCount) {
+      newErrors.push(`${fileArray.length - allowedCount} file(s) skipped — maximum ${MAX_FILES} files allowed.`)
+    }
+
+    // Validate each file — collect valid ones and their metadata
+    interface PendingItem {
+      file: File
+      duration: number
+      thumbnailUrl: string | undefined
+      url: string
+    }
+    const valid: PendingItem[] = []
 
     for (const file of toProcess) {
       if (!file.type.startsWith('video') && !file.type.startsWith('audio')) {
@@ -102,37 +135,81 @@ export function useMergeFiles(): UseMergeFilesReturn {
       const duration = await getMediaDuration(file)
       const thumbnailUrl = await getVideoThumbnail(file)
       const url = URL.createObjectURL(file)
-      newItems.push({
-        id: generateId(),
-        file,
-        fileName: file.name,
-        fileSize: file.size,
-        duration,
-        isVideo: file.type.startsWith('video'),
-        url,
-        thumbnailUrl,
-      })
+      valid.push({ file, duration, thumbnailUrl, url })
     }
 
-    if (skipped > 0) newErrors.push(`${skipped} file(s) skipped — maximum ${MAX_FILES} files allowed.`)
-    setErrors(newErrors)
-    if (newItems.length > 0) setItems((prev) => [...prev, ...newItems])
-    processingRef.current = false
+    setValidationErrors(newErrors)
+
+    if (valid.length === 0) {
+      processingRef.current = false
+      return
+    }
+
+    // ── Step 2: batch upload all valid files ─────────────────
+    setUploadState({
+      isUploading: true,
+      progress: 0,
+      fileCount: valid.length,
+      error: null,
+    })
+
+    try {
+      const storageIds = await uploadMultiple(
+        valid.map((v) => v.file),
+        (progress) => {
+          const pct = parseInt(progress, 10)
+          setUploadState((prev) => ({ ...prev, progress: isNaN(pct) ? 0 : pct }))
+        },
+      )
+
+      // ── Step 3: build MediaItems with real storageIds ──────
+      const newItems: MediaItem[] = valid.map((v, i) => ({
+        id: storageIds[i] ?? generateId(),   // use storageId as stable id
+        file: v.file,
+        fileName: v.file.name,
+        fileSize: v.file.size,
+        duration: v.duration,
+        isVideo: v.file.type.startsWith('video'),
+        url: v.url,
+        thumbnailUrl: v.thumbnailUrl,
+        storageId: storageIds[i],            // real storageId from server
+      }))
+
+      setItems((prev) => [...prev, ...newItems])
+      setUploadState(IDLE_UPLOAD)
+    } catch (err) {
+      // Clean up object URLs on failure
+      valid.forEach((v) => URL.revokeObjectURL(v.url))
+
+      const message = err instanceof ApiError
+        ? err.message
+        : 'Upload failed. Please try again.'
+
+      setUploadState({
+        isUploading: false,
+        progress: 0,
+        fileCount: 0,
+        error: message,
+      })
+    } finally {
+      processingRef.current = false
+    }
   }, [items.length])
 
-  // Add files already stored on the server (no upload, no object URL)
+  // Server-picked files — no upload needed, storageId already known
   const addFromStored = useCallback((storedFiles: StoredFile[]) => {
-    setErrors([])
+    setValidationErrors([])
     setItems((prev) => {
       const remaining = MAX_FILES - prev.length
       if (remaining <= 0) {
-        setErrors([`Maximum ${MAX_FILES} files already reached.`])
+        setValidationErrors([`Maximum ${MAX_FILES} files already reached.`])
         return prev
       }
       const toAdd = storedFiles.slice(0, remaining)
-      const skipped = storedFiles.length - toAdd.length
+      if (storedFiles.length > remaining) {
+        setValidationErrors([`${storedFiles.length - remaining} file(s) skipped — maximum ${MAX_FILES} files allowed.`])
+      }
 
-      // Avoid duplicates by storageId
       const existingIds = new Set(prev.map((i) => i.id))
       const newItems: MediaItem[] = toAdd
         .filter((sf) => !existingIds.has(sf.storageId))
@@ -142,10 +219,9 @@ export function useMergeFiles(): UseMergeFilesReturn {
           fileSize: sf.fileSize,
           duration: parseDuration(sf.duration),
           isVideo: sf.isVideo,
-          // No file / url — came from server
+          storageId: sf.storageId,
         }))
 
-      if (skipped > 0) setErrors([`${skipped} file(s) skipped — maximum ${MAX_FILES} files allowed.`])
       return [...prev, ...newItems]
     })
   }, [])
@@ -156,7 +232,7 @@ export function useMergeFiles(): UseMergeFilesReturn {
       if (item?.url) URL.revokeObjectURL(item.url)
       return prev.filter((i) => i.id !== id)
     })
-    setErrors([])
+    setValidationErrors([])
   }, [])
 
   const reorder = useCallback((fromIndex: number, toIndex: number) => {
@@ -170,7 +246,8 @@ export function useMergeFiles(): UseMergeFilesReturn {
 
   const clearAll = useCallback(() => {
     setItems((prev) => { prev.forEach((i) => { if (i.url) URL.revokeObjectURL(i.url) }); return [] })
-    setErrors([])
+    setValidationErrors([])
+    setUploadState(IDLE_UPLOAD)
   }, [])
 
   const totalDuration = items.reduce((acc, i) => acc + i.duration, 0)
@@ -178,5 +255,18 @@ export function useMergeFiles(): UseMergeFilesReturn {
   const hasAudio = items.some((i) => !i.isVideo)
   const mixed = hasVideo && hasAudio
 
-  return { items, errors, addFiles, addFromStored, removeItem, reorder, clearAll, totalDuration, hasVideo, hasAudio, mixed }
+  return {
+    items,
+    validationErrors,
+    uploadState,
+    addFiles,
+    addFromStored,
+    removeItem,
+    reorder,
+    clearAll,
+    totalDuration,
+    hasVideo,
+    hasAudio,
+    mixed,
+  }
 }

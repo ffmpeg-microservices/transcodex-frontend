@@ -15,6 +15,7 @@ import {
   type StoredFile,
 } from '../types'
 import styles from './ToolPage.module.css'
+import { ProcessingBanner } from '../components/ProcessingBanner'
 
 const AUDIO_FORMATS = [MediaType.mp3, MediaType.aac, MediaType.wav, MediaType.flac, MediaType.ogg, MediaType.m4a]
 const BITRATES = [64, 96, 128, 192, 256, 320]
@@ -31,12 +32,16 @@ export default function AudioPage() {
   const [bitrate, setBitrate] = useState(128)
   const [channel, setChannel] = useState<ChannelType>(ChannelType.stereo)
   const [sampleRate, setSampleRate] = useState(44100)
-  const [submitted, setSubmitted] = useState(false)
-
+  const [activeProcessId, setActiveProcessId] = useState<string | null>(null)
   function handleStoredPick(file: StoredFile) {
     setFromStored(file)
   }
+  function handleStartAnother() {
 
+    clearFile()
+
+    setActiveProcessId(null)
+  }
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     if (!uploadedFile) return
@@ -51,27 +56,13 @@ export default function AudioPage() {
     }
     try {
       const newProcess = await toAudio(data)
-      addProcess(newProcess)
-      setSubmitted(true)
+      addProcess(newProcess.processResponseDto)
+      setActiveProcessId(newProcess.processResponseDto.processId)
+
+      toast.success('Conversion started! You can keep working.')
     } catch (err) {
       toast.error((err as ApiError).message)
     }
-  }
-
-  if (submitted) {
-    return (
-      <div className={styles.page}>
-        <div className={styles.successCard}>
-          <div className={styles.successEmoji}>🚀</div>
-          <h2>Conversion Started!</h2>
-          <p>Your audio conversion has been queued and is processing now.</p>
-          <div className={styles.successActions}>
-            <button className={styles.btnPrimary} onClick={() => navigate('/queue')}>View Progress</button>
-            <button className={styles.btnGhost} onClick={() => { clearFile(); setSubmitted(false) }}>Convert Another</button>
-          </div>
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -92,6 +83,21 @@ export default function AudioPage() {
       </div>
 
       <div className={styles.layout}>
+        {/* Live progress banner — shown while job is running, stays above form */}
+
+        {activeProcessId && (
+
+          <ProcessingBanner
+
+            processId={activeProcessId}
+
+            onStartAnother={handleStartAnother}
+
+            anotherLabel="Convert Another"
+
+          />
+
+        )}
         <section className={styles.section}>
           <h2 className={styles.sectionLabel}>1. Upload Media File</h2>
           <Dropzone

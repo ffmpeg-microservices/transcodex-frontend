@@ -9,6 +9,7 @@ import { ApiError, GifConvertRequest, ResolutionType, type StoredFile } from '..
 import styles from './ToolPage.module.css'
 import gifStyles from './GifPage.module.css'
 import { FilePicker } from '../components/FilePicker'
+import { ProcessingBanner } from '../components/ProcessingBanner'
 
 const FPS_OPTIONS = [10, 15, 20, 24, 30]
 const GIF_RESOLUTIONS = [ResolutionType.p144, ResolutionType.p240, ResolutionType.p360, ResolutionType.p480, ResolutionType.p720]
@@ -26,7 +27,8 @@ export default function GifPage() {
   const [clipDuration, setClipDuration] = useState(3)
   const [fps, setFps] = useState(15)
   const [resolution, setResolution] = useState<ResolutionType>(ResolutionType.p480)
-  const [submitted, setSubmitted] = useState(false)
+  const [activeProcessId, setActiveProcessId] = useState<string | null>(null)
+
 
   useEffect(() => {
     if (!uploadedFile || !videoRef.current) return
@@ -43,6 +45,12 @@ export default function GifPage() {
 
   function handleStoredPick(file: StoredFile) {
     setFromStored(file)
+  }
+  function handleStartAnother() {
+
+    clearFile()
+
+    setActiveProcessId(null)
   }
 
   function handleStartChange(val: number) {
@@ -67,27 +75,13 @@ export default function GifPage() {
     }
     try {
       const newProcess = await toGif(data)
-      addProcess(newProcess)
-      setSubmitted(true)
+      addProcess(newProcess.processResponseDto)
+      setActiveProcessId(newProcess.processResponseDto.processId)
+
+      toast.success('Conversion started! You can keep working.')
     } catch (err) {
       toast.error((err as ApiError).message)
     }
-  }
-
-  if (submitted) {
-    return (
-      <div className={styles.page}>
-        <div className={styles.successCard}>
-          <div className={styles.successEmoji}>🚀</div>
-          <h2>GIF Creation Started!</h2>
-          <p>Your animated GIF is being generated now.</p>
-          <div className={styles.successActions}>
-            <button className={styles.btnPrimary} onClick={() => navigate('/queue')}>View Progress</button>
-            <button className={styles.btnGhost} onClick={() => { clearFile(); setSubmitted(false) }}>Make Another</button>
-          </div>
-        </div>
-      </div>
-    )
   }
 
   const maxStart = Math.max(0, videoDuration - 1)
@@ -111,6 +105,21 @@ export default function GifPage() {
       </div>
 
       <div className={styles.layout}>
+        {/* Live progress banner — shown while job is running, stays above form */}
+
+        {activeProcessId && (
+
+          <ProcessingBanner
+
+            processId={activeProcessId}
+
+            onStartAnother={handleStartAnother}
+
+            anotherLabel="Convert Another"
+
+          />
+
+        )}
         <section className={styles.section}>
           <h2 className={styles.sectionLabel}>1. Upload Video File</h2>
           <Dropzone

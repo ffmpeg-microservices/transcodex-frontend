@@ -1,12 +1,14 @@
 import { useState, useRef, type DragEvent, type ChangeEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useMergeFiles } from './useMergeFiles'
 import { MergeTimeline } from './MergeTimeline'
 import { MergePreview } from './MergePreview'
 import { FilePicker } from '../components/FilePicker'
+import { ProcessingBanner } from '../components/ProcessingBanner'
 import { useProcess } from '../context/ProcessContext'
-import { ProcessStatus, MediaType, type StoredFile } from '../types'
+import { useToast } from '../components/Toast'
+import { ProcessStatus, MediaType, type StoredFile, ApiError, VideoCodecType, AudioCodecType } from '../types'
 import styles from './MergePage.module.css'
+import { useMergeFiles } from '../hooks/useMergeFiles'
+import { mergeMedia } from '../apis/process.api'
 
 const MAX_FILES = 10
 
@@ -17,18 +19,20 @@ function formatDur(s: number) {
 }
 
 export default function MergePage() {
-  const navigate = useNavigate()
   const {
-    items, errors, addFiles, addFromStored,
+    items, validationErrors, uploadState,
+    addFiles, addFromStored,
     removeItem, reorder, clearAll,
     totalDuration, hasVideo, mixed,
   } = useMergeFiles()
+
   const { addProcess } = useProcess()
+  const toast = useToast()
 
   const [pickerOpen, setPickerOpen] = useState(false)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [outputFormat, setOutputFormat] = useState<string>(MediaType.mp4)
-  const [submitted, setSubmitted] = useState(false)
+  const [activeProcessId, setActiveProcessId] = useState<string | null>(null)
   const [dropzoneActive, setDropzoneActive] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -36,62 +40,51 @@ export default function MergePage() {
     ? [MediaType.mp4, MediaType.mkv, MediaType.mov, MediaType.webm, MediaType.avi]
     : [MediaType.mp3, MediaType.aac, MediaType.wav, MediaType.flac, MediaType.ogg]
 
-  function handleDropzoneFiles(files: FileList | File[]) {
-    void addFiles(files)
-  }
-
   function handleDrop(e: DragEvent<HTMLDivElement>) {
     e.preventDefault()
     setDropzoneActive(false)
-    handleDropzoneFiles(e.dataTransfer.files)
+    if (!uploadState.isUploading) void addFiles(e.dataTransfer.files)
   }
 
   function handleChange(e: ChangeEvent<HTMLInputElement>) {
-    if (e.target.files) handleDropzoneFiles(e.target.files)
+    if (e.target.files && !uploadState.isUploading) void addFiles(e.target.files)
     e.target.value = ''
   }
 
-  // Multi-select from server
   function handleStoredPick(files: StoredFile[]) {
     addFromStored(files)
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (items.length < 2) return
-    const baseName = items.map((i) => i.fileName.replace(/\.[^.]+$/, '')).join('+')
-    addProcess({
-      fileName: `${baseName.slice(0, 40)}_merged.${outputFormat}`,
-      duration: formatDur(totalDuration),
-      finalFileSize: '',
-      isVideo: hasVideo,
-      processId: `proc-${Date.now()}`,
-      storageIdOutput: '',
-      status: ProcessStatus.PENDING,
-      createdAt: new Date().toISOString(),
-    })
-    setSubmitted(true)
+
+    // Guard: all items must have a storageId (uploaded or server-picked)
+    const missing = items.filter((i) => !i.storageId)
+    if (missing.length > 0) {
+      toast.error('Some files are still uploading. Please wait.')
+      return
+    }
+
+    try {
+      const newProcess = await mergeMedia({
+        mediaFiles: items.map((i) => ({ storageId: i.storageId, type: i.isVideo ? 'video' : 'audio' })),
+        duration: formatDur(totalDuration),
+        toMediaType: "video",
+        videoCodec: hasVideo ? VideoCodecType.h264 : undefined,
+        audioCodec: !hasVideo ? AudioCodecType.aac : undefined,
+        resolutionHeight: 720,
+      })
+      addProcess(newProcess.processResponseDto)
+      setActiveProcessId(newProcess.processResponseDto.processId)
+
+      toast.success('Conversion started! You can keep working.')
+    } catch (err) {
+      toast.error((err as ApiError).message)
+    }
   }
 
-  if (submitted) {
-    return (
-      <div className={styles.page}>
-        <div className={styles.successCard}>
-          <div className={styles.successEmoji}>🚀</div>
-          <h2>Merge Started!</h2>
-          <p>
-            {items.length} file{items.length !== 1 ? 's' : ''} are being merged into a single{' '}
-            <strong>.{outputFormat}</strong> file.
-          </p>
-          <div className={styles.successActions}>
-            <button className={styles.btnPrimary} onClick={() => navigate('/queue')}>View Progress</button>
-            <button className={styles.btnGhost} onClick={() => { clearAll(); setSubmitted(false) }}>Merge More Files</button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  const canSubmit = items.length >= 2
+  const canSubmit = items.length >= 2 && !uploadState.isUploading
+  const isAtMax = items.length >= MAX_FILES
 
   return (
     <div className={styles.page}>
@@ -112,7 +105,16 @@ export default function MergePage() {
       </div>
 
       <div className={styles.layout}>
-        {/* ── Step 1: Upload ── */}
+        {/* ── Job progress banner ── */}
+        {activeProcessId && (
+          <ProcessingBanner
+            processId={activeProcessId}
+            onStartAnother={() => { clearAll(); setActiveProcessId(null) }}
+            anotherLabel="Merge More Files"
+          />
+        )}
+
+        {/* ── Step 1: Add files ── */}
         <section className={styles.section}>
           <h2 className={styles.sectionLabel}>1. Add Files</h2>
 
@@ -121,21 +123,52 @@ export default function MergePage() {
             <div
               role="button"
               tabIndex={0}
-              className={`${styles.dropzone} ${dropzoneActive ? styles.dropzoneActive : ''} ${items.length >= MAX_FILES ? styles.dropzoneDisabled : ''}`}
-              onDragOver={(e) => { e.preventDefault(); setDropzoneActive(true) }}
+              className={`
+                ${styles.dropzone}
+                ${dropzoneActive ? styles.dropzoneActive : ''}
+                ${isAtMax || uploadState.isUploading ? styles.dropzoneDisabled : ''}
+              `}
+              onDragOver={(e) => { e.preventDefault(); if (!uploadState.isUploading) setDropzoneActive(true) }}
               onDragLeave={() => setDropzoneActive(false)}
               onDrop={handleDrop}
-              onClick={() => items.length < MAX_FILES && inputRef.current?.click()}
-              onKeyDown={(e) => e.key === 'Enter' && items.length < MAX_FILES && inputRef.current?.click()}
+              onClick={() => !isAtMax && !uploadState.isUploading && inputRef.current?.click()}
+              onKeyDown={(e) => e.key === 'Enter' && !isAtMax && !uploadState.isUploading && inputRef.current?.click()}
             >
-              <input ref={inputRef} type="file" accept="video/*,audio/*" multiple className={styles.hiddenInput} onChange={handleChange} />
-              <span className={styles.dropIcon}>📂</span>
-              {items.length >= MAX_FILES ? (
+              <input
+                ref={inputRef}
+                type="file"
+                accept="video/*,audio/*"
+                multiple
+                className={styles.hiddenInput}
+                onChange={handleChange}
+              />
+
+              {uploadState.isUploading ? (
+                /* ── Upload in progress ── */
+                <div className={styles.uploadingState}>
+                  <div className={styles.uploadSpinner} />
+                  <p className={styles.uploadingText}>
+                    Uploading {uploadState.fileCount} file{uploadState.fileCount !== 1 ? 's' : ''}…
+                  </p>
+                  <div className={styles.uploadTrack}>
+                    <div
+                      className={styles.uploadFill}
+                      style={{ width: `${uploadState.progress}%` }}
+                    />
+                  </div>
+                  <p className={styles.uploadPct}>{uploadState.progress}%</p>
+                </div>
+              ) : isAtMax ? (
                 <p className={styles.dropText}>Maximum {MAX_FILES} files reached</p>
               ) : (
                 <>
-                  <p className={styles.dropText}>Drop files or <span className={styles.dropLink}>browse</span></p>
-                  <p className={styles.dropHint}>{items.length}/{MAX_FILES} · Max 20 MB each</p>
+                  <span className={styles.dropIcon}>📂</span>
+                  <p className={styles.dropText}>
+                    Drop files or <span className={styles.dropLink}>browse</span>
+                  </p>
+                  <p className={styles.dropHint}>
+                    {items.length}/{MAX_FILES} files · Max 20 MB each
+                  </p>
                 </>
               )}
             </div>
@@ -148,19 +181,29 @@ export default function MergePage() {
               type="button"
               className={styles.serverPickBtn}
               onClick={() => setPickerOpen(true)}
-              disabled={items.length >= MAX_FILES}
+              disabled={isAtMax || uploadState.isUploading}
             >
               <span>🗂️</span>
               <span>Choose from<br />my uploaded files</span>
             </button>
           </div>
 
-          {/* Errors */}
-          {errors.length > 0 && (
+          {/* Upload error */}
+          {uploadState.error && (
             <div className={styles.errorList}>
-              {errors.map((err, i) => <p key={i} className={styles.errorItem}>⚠ {err}</p>)}
+              <p className={styles.errorItem}>⚠ {uploadState.error}</p>
             </div>
           )}
+
+          {/* Validation errors */}
+          {validationErrors.length > 0 && (
+            <div className={styles.errorList}>
+              {validationErrors.map((err, i) => (
+                <p key={i} className={styles.errorItem}>⚠ {err}</p>
+              ))}
+            </div>
+          )}
+
           {mixed && (
             <div className={styles.warning}>
               ⚠ Mixed video and audio files — audio-only files will render with a black frame.
@@ -172,7 +215,11 @@ export default function MergePage() {
         <section className={styles.section}>
           <div className={styles.sectionTop}>
             <h2 className={styles.sectionLabel}>2. Arrange Order</h2>
-            {items.length > 0 && <button className={styles.clearBtn} onClick={clearAll}>Clear all</button>}
+            {items.length > 0 && (
+              <button className={styles.clearBtn} onClick={clearAll} disabled={uploadState.isUploading}>
+                Clear all
+              </button>
+            )}
           </div>
           <MergeTimeline
             items={items}
@@ -204,8 +251,14 @@ export default function MergePage() {
             <div className={styles.exportRow}>
               <div className={styles.field}>
                 <label>Output Format</label>
-                <select value={outputFormat} onChange={(e) => setOutputFormat(e.target.value)}>
-                  {outputFormats.map((f) => <option key={f} value={f}>{f.toUpperCase()}</option>)}
+                <select
+                  value={outputFormat}
+                  onChange={(e) => setOutputFormat(e.target.value)}
+                  disabled={uploadState.isUploading}
+                >
+                  {outputFormats.map((f) => (
+                    <option key={f} value={f}>{f.toUpperCase()}</option>
+                  ))}
                 </select>
               </div>
               <div className={styles.summary}>
@@ -214,9 +267,19 @@ export default function MergePage() {
                 <div className={styles.summaryRow}><span>Output type</span><strong>{hasVideo ? 'Video' : 'Audio'}</strong></div>
               </div>
             </div>
+
             <div className={styles.submitRow}>
-              {!canSubmit && <p className={styles.submitHint}>Add at least 2 files to merge</p>}
-              <button className={styles.submitBtn} onClick={handleSubmit} disabled={!canSubmit}>
+              {uploadState.isUploading && (
+                <p className={styles.submitHint}>⏳ Waiting for upload to complete…</p>
+              )}
+              {!uploadState.isUploading && !canSubmit && (
+                <p className={styles.submitHint}>Add at least 2 files to merge</p>
+              )}
+              <button
+                className={styles.submitBtn}
+                onClick={handleSubmit}
+                disabled={!canSubmit}
+              >
                 ⚡ Merge {items.length} Files
               </button>
             </div>
