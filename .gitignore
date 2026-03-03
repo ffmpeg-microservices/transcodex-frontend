@@ -6,7 +6,7 @@ dist/
 # Ignore logs
 logs/
 # Ignore environment variables
-.env
+# .env
 # Ignore IDE files
 .vscode/
 # Ignore OS files
