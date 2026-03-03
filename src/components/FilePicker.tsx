@@ -11,10 +11,10 @@ import { StoredFile } from '../types'
 
 // ─── Helpers ────────────────────────────────────────────────
 
-function formatSize(bytes: number): string {
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
+// function formatSize(bytes: number): string {
+//   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+//   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+// }
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, {
@@ -89,8 +89,8 @@ export function FilePicker(props: FilePickerProps) {
   const filtered = files.filter((f) => {
     const matchesType =
       filter === 'all' ||
-      (filter === 'video' && f.isVideo) ||
-      (filter === 'audio' && !f.isVideo)
+      (filter === 'video' && f.mediaType === 'video') ||
+      (filter === 'audio' && f.mediaType === 'audio')
     const matchesSearch = f.fileName
       .toLowerCase()
       .includes(search.toLowerCase())
@@ -234,7 +234,7 @@ export function FilePicker(props: FilePickerProps) {
 
                     {/* Icon */}
                     <span className={styles.rowIcon}>
-                      {file.isVideo ? '🎬' : '🎵'}
+                      {file.mediaType === 'video' ? '🎬' : '🎵'}
                     </span>
 
                     {/* Info */}
@@ -245,7 +245,7 @@ export function FilePicker(props: FilePickerProps) {
                           {file.fileType.toUpperCase()}
                         </span>
                         <span>{file.duration}</span>
-                        <span>{formatSize(file.fileSize)}</span>
+                        <span>{file.fileSize}</span>
                         <span>{formatDate(file.uploadedDate)}</span>
                       </div>
                     </div>

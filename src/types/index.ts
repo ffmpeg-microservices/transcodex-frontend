@@ -129,7 +129,7 @@ export interface MergeRequest {
 
   mediaFiles: OrderedMedia[];
   duration: string;
-  toMediaType: 'video';
+  toMediaType: MediaType;
   videoCodec?: VideoCodecType;
   audioCodec?: AudioCodecType;
   resolutionHeight: number;

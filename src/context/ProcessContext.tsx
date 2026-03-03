@@ -36,7 +36,7 @@ export function ProcessProvider({ children }: { children: ReactNode }) {
 
   const addProcess = useCallback(
     (p: ProcessDto) => {
-      const tracked: TrackedProcess = { ...p, progress: 0, status: ProcessStatus.WAITING }
+      const tracked: TrackedProcess = { ...p, progress: 0 }
       setProcesses((prev) => [tracked, ...prev])
 
       // Subscribe to /topic/progress.{processId}

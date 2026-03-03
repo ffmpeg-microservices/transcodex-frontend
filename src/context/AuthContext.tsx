@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from 'react'
 import { type User, type StoredUser, type AuthResult, ApiError } from '../types'
-import { loginApi, signupApi } from '../apis/auth.api'
+import { loginApi, logoutApi, signupApi } from '../apis/auth.api'
 
 interface AuthContextValue {
   user: User | null
@@ -23,8 +23,8 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-const USER_KEY = 'txapp:session'
-const TOKEN = 'txapp:token'
+export const USER_KEY = 'txapp:session'
+export const TOKEN = 'txapp:token'
 
 function persistSession(u: User, token: string) {
   localStorage.setItem(USER_KEY, JSON.stringify(u))
@@ -91,6 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   const logout = useCallback(() => {
+    logoutApi();
     setUser(null)
     clearSession()
   }, [])

@@ -31,7 +31,7 @@ export default function MergePage() {
 
   const [pickerOpen, setPickerOpen] = useState(false)
   const [activeId, setActiveId] = useState<string | null>(null)
-  const [outputFormat, setOutputFormat] = useState<string>(MediaType.mp4)
+  const [outputFormat, setOutputFormat] = useState<MediaType>(MediaType.mp4)
   const [activeProcessId, setActiveProcessId] = useState<string | null>(null)
   const [dropzoneActive, setDropzoneActive] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -69,9 +69,9 @@ export default function MergePage() {
       const newProcess = await mergeMedia({
         mediaFiles: items.map((i) => ({ storageId: i.storageId, type: i.isVideo ? 'video' : 'audio' })),
         duration: formatDur(totalDuration),
-        toMediaType: "video",
+        toMediaType: outputFormat,
         videoCodec: hasVideo ? VideoCodecType.h264 : undefined,
-        audioCodec: !hasVideo ? AudioCodecType.aac : undefined,
+        audioCodec: AudioCodecType.aac,//!hasVideo ? AudioCodecType.aac : undefined,
         resolutionHeight: 720,
       })
       addProcess(newProcess.processResponseDto)
@@ -253,7 +253,7 @@ export default function MergePage() {
                 <label>Output Format</label>
                 <select
                   value={outputFormat}
-                  onChange={(e) => setOutputFormat(e.target.value)}
+                  onChange={(e) => setOutputFormat(e.target.value as MediaType)}
                   disabled={uploadState.isUploading}
                 >
                   {outputFormats.map((f) => (
