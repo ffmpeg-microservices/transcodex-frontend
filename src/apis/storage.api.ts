@@ -20,7 +20,7 @@ export async function upload(file: FormData, onUploadProgress: (progress: string
     } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
             console.error('Upload failed:', error.response.data);
-            throw new ApiError(error.response.data.status, error.response.data.error || "Upload failed");
+            throw new ApiError(error.response.data.status, error.response.data.errorMessage || "Upload failed");
         }
         throw new ApiError(0, 'Network error. Check your connection.')
     }
@@ -93,7 +93,7 @@ export async function uploadMultiple(
     } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
             console.error('Upload failed:', error.response.data);
-            throw new ApiError(error.response.data.status, error.response.data.error || "Upload failed");
+            throw new ApiError(error.response.data.status, error.response.data.errorMessage || "Upload failed");
         }
         throw new ApiError(0, 'Network error. Check your connection.')
     }

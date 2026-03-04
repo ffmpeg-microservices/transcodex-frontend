@@ -11,7 +11,7 @@ export async function loginApi(username: string, password: string): Promise<Logi
     } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
             console.error('Signup failed:', error.response.data)
-            throw new ApiError(error.response.data.status, error.response.data.error || 'Signup failed')
+            throw new ApiError(error.response.data.status, error.response.data.errorMessage || 'Signup failed')
         }
         throw new ApiError(0, 'Network error. Check your connection.')
     }
@@ -31,7 +31,7 @@ export async function signupApi(
     } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
             console.error('Signup failed:', error.response.data)
-            throw new ApiError(error.response.data.status, error.response.data.error || 'Signup failed')
+            throw new ApiError(error.response.data.status, error.response.data.errorMessage || 'Signup failed')
         }
         throw new ApiError(0, 'Network error. Check your connection.')
     }
@@ -46,7 +46,7 @@ export async function refreshToken(): Promise<string> {
     } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
             console.error('Refresh failed:', error.response.data)
-            throw new ApiError(error.response.data.status, error.response.data.error || 'Refresh failed')
+            throw new ApiError(error.response.data.status, error.response.data.errorMessage || 'Refresh failed')
         }
         throw new ApiError(0, 'Network error. Check your connection.')
     }
@@ -61,7 +61,7 @@ export async function logoutApi(): Promise<string> {
     } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
             console.error('Signup failed:', error.response.data)
-            throw new ApiError(error.response.data.status, error.response.data.error || 'Signup failed')
+            throw new ApiError(error.response.data.status, error.response.data.errorMessage || 'Signup failed')
         }
         throw new ApiError(0, 'Network error. Check your connection.')
     }
